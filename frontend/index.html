@@ -1,0 +1,3713 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroGraph · Atmospheric Graph Intelligence</title>
+  <link rel="icon" type="image/svg+xml" href="aerograph_logo.svg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- MapLibre GL CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <style>
+    :root {
+      --bg-void: #09090B;
+      --bg-surface: #121215;
+      --bg-elevated: #18181C;
+      --bg-pill: #1C1C21;
+
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-medium: rgba(255, 255, 255, 0.15);
+      --border-strong: rgba(255, 255, 255, 0.25);
+
+      --text-white: #FFFFFF;
+      --text-primary: #F4F4F6;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+
+      --accent-white: #FFFFFF;
+      --accent-emerald: #10B981;
+      --accent-emerald-soft: rgba(16, 185, 129, 0.15);
+      --accent-amber: #F59E0B;
+      --accent-crimson: #F43F5E;
+      --accent-crimson-soft: rgba(244, 63, 94, 0.15);
+
+      --radius-pill: 9999px;
+      --radius-card: 20px;
+      --radius-container: 24px;
+
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      user-select: none;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-pill);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-void);
+    }
+
+    /* 64px Left Rail with ROUND Circular Buttons (Haulix Style) */
+    .left-rail {
+      width: 64px;
+      min-width: 64px;
+      height: 100%;
+      background: #09090B;
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px 0;
+      z-index: 50;
+      position: relative;
+    }
+
+    .rail-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #141418;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .rail-logo:hover {
+      background: #1C1C22;
+      border-color: rgba(255, 255, 255, 0.40);
+      transform: scale(1.08);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.22);
+    }
+
+    .rail-logo:active {
+      transform: scale(0.93);
+    }
+
+    .rail-logo.pulsing svg {
+      animation: logo-tactile-pulse 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes logo-tactile-pulse {
+      0% {
+        transform: scale(1) rotate(0deg);
+      }
+
+      30% {
+        transform: scale(1.25) rotate(-10deg);
+      }
+
+      70% {
+        transform: scale(1.12) rotate(8deg);
+      }
+
+      100% {
+        transform: scale(1) rotate(0deg);
+      }
+    }
+
+    .rail-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+
+    /* Animated Sliding White Circle Indicator */
+    .rail-sliding-indicator {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.35);
+      transition: transform 0.30s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1;
+      top: 0;
+      left: 12px;
+    }
+
+    /* Round Circle Buttons (Haulix Inspired) */
+    .rail-item-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .rail-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .rail-btn svg {
+      transition: stroke 0.2s ease, transform 0.2s ease;
+    }
+
+    .rail-btn:hover {
+      color: var(--text-white);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .rail-btn.active {
+      color: #09090B !important;
+      background: transparent !important;
+    }
+
+    .rail-btn.active svg {
+      stroke: #09090B !important;
+    }
+
+    .rail-btn-label {
+      font-size: 0.60rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .rail-item-wrapper:hover .rail-btn-label {
+      color: var(--text-white);
+    }
+
+    .rail-item-wrapper.active .rail-btn-label {
+      color: var(--text-white);
+      font-weight: 600;
+    }
+
+    .rail-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .status-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
+      animation: pulse-dot 2.2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.35;
+        transform: scale(0.85);
+      }
+    }
+
+    /* Main Container */
+    .main-viewport {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-void);
+    }
+
+    /* Top Capsule Pill Strip */
+    .top-pill-strip {
+      height: 52px;
+      min-height: 52px;
+      background: var(--bg-void);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      gap: 14px;
+      font-size: 0.78rem;
+    }
+
+    .header-brand-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 14px 5px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-pill);
+      color: var(--text-white);
+      user-select: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .header-brand-capsule:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .header-brand-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: var(--text-white);
+    }
+
+    .header-brand-logo {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .pill-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+    }
+
+    .telemetry-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      cursor: default;
+    }
+
+    .telemetry-pill:hover {
+      border-color: var(--border-medium);
+      color: var(--text-primary);
+    }
+
+    .telemetry-pill strong {
+      color: var(--text-white);
+      font-weight: 600;
+    }
+
+    .telemetry-pill .pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    /* Top Right Station Capsule & Time (Haulix / Tesla Minimalist Aesthetic) */
+    .top-right-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .station-dropdown-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      padding: 5px 12px 5px 10px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .station-dropdown-capsule:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .station-dropdown-capsule:focus-within {
+      border-color: #FFFFFF;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .station-capsule-pin {
+      color: var(--text-secondary);
+      flex-shrink: 0;
+      transition: color 0.18s ease;
+    }
+
+    .station-dropdown-capsule:hover .station-capsule-pin {
+      color: #FFFFFF;
+    }
+
+    .station-capsule-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      user-select: none;
+    }
+
+    .station-select-native {
+      background: transparent;
+      border: none;
+      color: #FFFFFF;
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      padding-right: 4px;
+    }
+
+    .station-select-native option {
+      background: #141419;
+      color: #FFFFFF;
+      padding: 6px 12px;
+      font-weight: 500;
+    }
+
+    .station-capsule-chevron {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      pointer-events: none;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .station-dropdown-capsule:hover .station-capsule-chevron {
+      color: #FFFFFF;
+      transform: translateY(1.5px);
+    }
+
+    .poll-time-capsule {
+      padding: 5px 11px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Floating Toast Notification */
+    .toast-container {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99999;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast-pill {
+      background: rgba(18, 18, 24, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      padding: 7px 18px;
+      border-radius: 9999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.65);
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-pill.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Sub-Header & Controls */
+    .dashboard-header {
+      padding: 8px 20px 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--bg-void);
+    }
+
+    .header-row-1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .dash-title-block h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: -0.025em;
+    }
+
+    .dash-subtitle {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.2s ease;
+    }
+
+    .context-preview-pill {
+      font-size: 0.64rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      padding: 1px 7px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0.04em;
+    }
+
+    .context-preview-text {
+      color: var(--text-white);
+      font-weight: 500;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Tesla Minimalist Tactile Toggles */
+    .tactile-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      background: var(--bg-surface);
+      padding: 4px 10px 4px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .tactile-toggle:hover {
+      border-color: var(--border-medium);
+      color: var(--text-white);
+      transform: translateY(-1px);
+    }
+
+    .toggle-track {
+      width: 28px;
+      height: 16px;
+      background: #27272A;
+      border-radius: var(--radius-pill);
+      position: relative;
+      transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toggle-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #71717A;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+    }
+
+    .tactile-toggle.active.toggle-emerald .toggle-track {
+      background: var(--accent-emerald);
+    }
+
+    .tactile-toggle.active.toggle-emerald .toggle-thumb {
+      transform: translateX(12px);
+      background: #FFFFFF;
+    }
+
+    .tactile-toggle.active.toggle-crimson .toggle-track {
+      background: var(--accent-crimson);
+    }
+
+    .tactile-toggle.active.toggle-crimson .toggle-thumb {
+      transform: translateX(12px);
+      background: #FFFFFF;
+    }
+
+    /* Navigation Bar Enclosed Inside a Floating Pill Container */
+    .header-row-2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .nav-pill-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      background: #141418;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius-pill);
+      padding: 4px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-sliding-indicator {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 0;
+      border-radius: var(--radius-pill);
+      background: #FFFFFF;
+      box-shadow: 0 2px 10px rgba(255, 255, 255, 0.25);
+      transition: transform 0.30s cubic-bezier(0.16, 1, 0.3, 1), width 0.30s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .nav-tab-btn {
+      position: relative;
+      z-index: 2;
+      background: transparent;
+      border: none;
+      padding: 6px 16px;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-sans);
+      font-size: 0.80rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.22s ease;
+      white-space: nowrap;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-white);
+    }
+
+    .nav-tab-btn.active {
+      color: #09090B !important;
+      font-weight: 600;
+    }
+
+    .station-filters {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 0.74rem;
+      padding: 5px 13px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .filter-pill:hover {
+      background: var(--bg-elevated);
+      color: var(--text-white);
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+
+    .filter-pill.active {
+      background: #FFFFFF;
+      border-color: #FFFFFF;
+      color: #09090B;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+    }
+
+    /* Inset Rounded Container */
+    .tab-content-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      margin: 0 20px 18px 20px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-container);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .tab-pane {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .tab-pane.active {
+      display: block;
+      animation: paneFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes paneFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.995);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* --- TAB 1: OPERATIONS MAP STAGE --- */
+    #pane-map {
+      padding: 0 !important;
+      overflow: hidden !important;
+      border-radius: var(--radius-container);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #09090B;
+    }
+
+    #wind-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Station HTML Markers & Beacons */
+    .station-beacon {
+      position: relative;
+      width: 0;
+      height: 0;
+      cursor: pointer;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      top: -14px;
+      left: -14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid #FFFFFF;
+      opacity: 0.8;
+      animation: beacon-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      pointer-events: none;
+    }
+
+    @keyframes beacon-ping {
+      0% {
+        transform: scale(0.4);
+        opacity: 0.9;
+      }
+
+      80%,
+      100% {
+        transform: scale(2.2);
+        opacity: 0;
+      }
+    }
+
+    .beacon-core {
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2px solid #09090B;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      transition: transform 0.2s ease;
+    }
+
+    .station-beacon:hover .beacon-core,
+    .station-beacon.selected .beacon-core {
+      transform: scale(1.4);
+      box-shadow: 0 0 14px #FFFFFF;
+    }
+
+    .beacon-badge {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(14, 14, 18, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-pill);
+      padding: 2px 8px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-white);
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Floating Station Inspector Card (Haulix TX-4821-HX Style) */
+    .inspector-card {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 320px;
+      background: rgba(18, 18, 22, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      z-index: 10;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .inspector-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .inspector-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: var(--accent-emerald-soft);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .inspector-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-family: var(--font-mono);
+    }
+
+    .inspector-progress-block {
+      margin-bottom: 14px;
+    }
+
+    .prog-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .prog-bar-track {
+      width: 100%;
+      height: 6px;
+      background: #27272A;
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+
+    .prog-bar-fill {
+      height: 100%;
+      background: #FFFFFF;
+      border-radius: var(--radius-pill);
+      width: 72%;
+      transition: width 0.4s ease;
+    }
+
+    .gauges-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .gauge-card {
+      background: #141418;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .gauge-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .radial-svg-box {
+      width: 82px;
+      height: 82px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radial-val-center {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radial-val-center .val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .radial-val-center .unit {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+    }
+
+    .inspector-projection-row {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .inspector-projection-row strong {
+      color: var(--text-white);
+    }
+
+    /* Floating Compass Rose (Interactive True North Reset) */
+    .floating-compass {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 90px;
+      height: 90px;
+      background: rgba(18, 18, 22, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-medium);
+      border-radius: 50%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .floating-compass:hover {
+      transform: scale(1.06);
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    }
+
+    .floating-compass:active {
+      transform: scale(0.95);
+    }
+
+    .compass-bezel {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #18181C 0%, #0E0E12 100%);
+    }
+
+    .compass-dial {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      transition: transform 0.12s ease-out;
+    }
+
+    .compass-center-info {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .compass-speed {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-white);
+      letter-spacing: 0.04em;
+    }
+
+    .compass-dir {
+      font-size: 0.60rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Floating Map Controls */
+    .map-controls-floating {
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      background: rgba(18, 18, 22, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .map-ctrl-btn {
+      width: 32px;
+      height: 32px;
+      background: #18181D;
+      border: 1px solid var(--border-subtle);
+      border-radius: 50%;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .map-ctrl-btn:hover {
+      background: #FFFFFF;
+      border-color: #FFFFFF;
+      color: #09090B;
+      transform: scale(1.08);
+    }
+
+    /* --- TAB 2: NEURAL STUDIO --- */
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .rounded-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: border-color 0.2s ease;
+    }
+
+    .rounded-card:hover {
+      border-color: var(--border-medium);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .neighbor-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .neighbor-item {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 10px 14px;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+      cursor: pointer;
+    }
+
+    .neighbor-item:hover {
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+
+    .neighbor-item-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-white);
+      margin-bottom: 4px;
+    }
+
+    .neighbor-meta {
+      font-size: 0.70rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .lattice-stage {
+      display: grid;
+      grid-template-columns: 240px 1fr 220px;
+      gap: 28px;
+      align-items: center;
+      position: relative;
+      min-height: 380px;
+      padding: 18px 20px;
+      overflow: visible;
+    }
+
+    /* Synapses are rendered with z-index: 25 ABOVE grid cells so they are 100% VISIBLE and never covered! */
+    #synapse-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 25;
+      overflow: visible;
+    }
+
+    /* Left Bay: GCN Inflow Matrix */
+    .gcn-inflow-bay {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .bay-header-label {
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inflow-feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .inflow-feature-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+    }
+
+    .inflow-feature-name {
+      color: var(--text-secondary);
+      font-size: 0.68rem;
+    }
+
+    .inflow-feature-val {
+      color: var(--text-white);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+    }
+
+    .gcn-spectrum-bank {
+      margin-top: 4px;
+    }
+
+    .gcn-strip-col {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 2.5px;
+      height: 28px;
+      align-items: end;
+      background: #09090B;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .gcn-bar {
+      width: 100%;
+      min-height: 4px;
+      background: #3F3F46;
+      border-radius: 1.5px;
+      transition: all 0.15s ease;
+    }
+
+    .gcn-bar.active {
+      background: #10B981 !important;
+      box-shadow: 0 0 8px #10B981;
+    }
+
+    /* Center Bay: 8x8 Grid & Micro-Inspector */
+    .lattice-center-bay {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .lattice-grid-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .lattice-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 30px);
+      grid-template-rows: repeat(8, 30px);
+      gap: 4px;
+      background: #0E0E12;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .lattice-cell {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: #18181E;
+      border: 1px solid #26262F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.60rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+      transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .lattice-cell:hover, .lattice-cell.hovered {
+      background: #FFFFFF !important;
+      border-color: #FFFFFF !important;
+      color: #09090B !important;
+      font-weight: 700;
+      transform: scale(1.18);
+      z-index: 30 !important;
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.5);
+    }
+
+    .lattice-cell.pinned {
+      background: #E4E4E7 !important;
+      border-color: #FFFFFF !important;
+      color: #09090B !important;
+      font-weight: 700;
+      z-index: 28 !important;
+    }
+
+    .neuron-micro-card {
+      width: 100%;
+      max-width: 320px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .neuron-card-unit {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .neuron-card-val {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--accent-emerald);
+    }
+
+    /* Right Bay: Forecast Cards Hub */
+    .horizon-cards-bay {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .horizon-node-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .horizon-node-card::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3F3F46;
+      border: 1.5px solid var(--bg-void);
+      transition: all 0.18s ease;
+    }
+
+    .horizon-node-card.coupled-pos {
+      border-color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .horizon-node-card.coupled-pos::before {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .horizon-node-card.coupled-neg {
+      border-color: #F43F5E;
+      background: rgba(244, 63, 94, 0.08);
+    }
+    .horizon-node-card.coupled-neg::before {
+      background: #F43F5E;
+      box-shadow: 0 0 8px #F43F5E;
+    }
+
+    .node-pill-tag {
+      font-family: var(--font-mono);
+      font-size: 0.70rem;
+      font-weight: 700;
+      color: var(--text-white);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .node-pred-val {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .node-delta-tag {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+    }
+
+    /* --- TAB 3: FORECAST & SALIENCY --- */
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .chart-container-svg {
+      width: 100%;
+      height: 320px;
+      position: relative;
+    }
+
+    .saliency-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .saliency-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.78rem;
+    }
+
+    .saliency-feat-name {
+      width: 90px;
+      font-weight: 500;
+      color: var(--text-white);
+      text-align: right;
+    }
+
+    .saliency-bar-track {
+      flex: 1;
+      height: 10px;
+      background: #27272A;
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+    }
+
+    .saliency-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-pill);
+      background: #FFFFFF;
+      transition: width 0.3s ease;
+    }
+
+    .saliency-val {
+      width: 48px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--text-secondary);
+      text-align: left;
+    }
+
+    /* --- TAB 4: VALIDATION AUDIT --- */
+    .validation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .audit-metric-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.80rem;
+      font-family: var(--font-mono);
+      text-align: left;
+    }
+
+    .audit-table th {
+      padding: 10px 12px;
+      background: #09090B;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .audit-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+
+    .audit-table tr.highlight-row {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .audit-table tr.highlight-row td:first-child {
+      color: var(--text-white);
+      font-weight: 600;
+    }
+
+    /* --- TAB 5: STATION MATRIX --- */
+    .matrix-card {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.80rem;
+    }
+
+    .matrix-table th {
+      padding: 12px 16px;
+      background: #09090B;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: var(--font-sans);
+    }
+
+    .matrix-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      cursor: pointer;
+    }
+
+    .matrix-table tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .matrix-table tr.selected-row {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .status-dot-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .status-dot-pill.good {
+      background: var(--accent-emerald-soft);
+      color: var(--accent-emerald);
+    }
+
+    .status-dot-pill.moderate {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-white);
+    }
+
+    .status-dot-pill.poor {
+      background: rgba(251, 146, 60, 0.15);
+      color: #FB923C;
+    }
+
+    .status-dot-pill.severe {
+      background: var(--accent-crimson-soft);
+      color: var(--accent-crimson);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-shell">
+    <!-- 64px Left Rail with ROUND Circular Buttons (Haulix Style) -->
+    <aside class="left-rail">
+      <div class="rail-logo" title="AeroGraph · Instant Inference Pulse" id="logo-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AeroGraph Logo">
+          <!-- Outer atmospheric flow arcs -->
+          <path d="M3 14.5C7.2 14.5 10.4 7.5 18.8 6.5" stroke="#FFFFFF" stroke-width="1.65" stroke-linecap="round" />
+          <path d="M5 18.5C9.2 18.5 12.4 13.5 21 12.5" stroke="#71717A" stroke-width="1.4" stroke-linecap="round" />
+          <!-- Directed graph edges -->
+          <line x1="6.5" y1="9.5" x2="18.8" y2="6.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.1" stroke-dasharray="2 2" />
+          <line x1="6.5" y1="9.5" x2="14.5" y2="16.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.1" />
+          <!-- Transparent-center sensor & solid target nodes -->
+          <circle cx="6.5" cy="9.5" r="2" stroke="#FFFFFF" stroke-width="1.5" />
+          <circle cx="14.5" cy="16.5" r="1.75" stroke="#A1A1AA" stroke-width="1.4" />
+          <circle cx="18.8" cy="6.5" r="2.5" fill="#FFFFFF" />
+        </svg>
+      </div>
+
+      <nav class="rail-nav" id="rail-nav-container">
+        <!-- Animated Sliding White Circle Indicator -->
+        <div class="rail-sliding-indicator" id="rail-pill-indicator"></div>
+
+        <div class="rail-item-wrapper active" data-tab="map">
+          <button class="rail-btn active" data-tab="map" data-idx="0"
+            data-desc="Interactive 3D map with Bengaluru monitoring stations">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+          </button>
+          <span class="rail-btn-label">Map</span>
+        </div>
+
+        <div class="rail-item-wrapper" data-tab="studio">
+          <button class="rail-btn" data-tab="studio" data-idx="1"
+            data-desc="Neural network structure and latent feature activations">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+              <rect x="9" y="9" width="6" height="6"></rect>
+              <line x1="9" y1="1" x2="9" y2="4"></line>
+              <line x1="15" y1="1" x2="15" y2="4"></line>
+              <line x1="9" y1="20" x2="9" y2="23"></line>
+              <line x1="15" y1="20" x2="15" y2="23"></line>
+              <line x1="20" y1="9" x2="23" y2="9"></line>
+              <line x1="20" y1="14" x2="23" y2="14"></line>
+              <line x1="1" y1="9" x2="4" y2="9"></line>
+              <line x1="1" y1="14" x2="4" y2="14"></line>
+            </svg>
+          </button>
+          <span class="rail-btn-label">Studio</span>
+        </div>
+
+        <div class="rail-item-wrapper" data-tab="forecast">
+          <button class="rail-btn" data-tab="forecast" data-idx="2"
+            data-desc="6-hour air quality forecast and key driving features">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </button>
+          <span class="rail-btn-label">Forecast</span>
+        </div>
+
+        <div class="rail-item-wrapper" data-tab="validation">
+          <button class="rail-btn" data-tab="validation" data-idx="3"
+            data-desc="Sensor validation accuracy and baseline model comparisons">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </button>
+          <span class="rail-btn-label">Audit</span>
+        </div>
+
+        <div class="rail-item-wrapper" data-tab="matrix">
+          <button class="rail-btn" data-tab="matrix" data-idx="4"
+            data-desc="Summary table for all 11 stations with 24-hour trends">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+          </button>
+          <span class="rail-btn-label">Matrix</span>
+        </div>
+      </nav>
+
+      <div class="rail-bottom">
+        <div class="rail-item-wrapper" style="margin-bottom: 6px;">
+          <button class="rail-btn" id="btn-force-poll" title="Refresh Live Data"
+            data-desc="Refresh live sensor and weather data">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" id="poll-icon">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+            </svg>
+          </button>
+          <span class="rail-btn-label">Sync</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+      <!-- Top Capsule Pill Strip -->
+      <header class="top-pill-strip">
+        <div class="header-brand-capsule" title="AeroGraph · Atmospheric Graph Intelligence">
+          <svg class="header-brand-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="AeroGraph Logo">
+            <!-- Outer atmospheric flow arcs -->
+            <path d="M3 14.5C7.2 14.5 10.4 7.5 18.8 6.5" stroke="#FFFFFF" stroke-width="1.65" stroke-linecap="round" />
+            <path d="M5 18.5C9.2 18.5 12.4 13.5 21 12.5" stroke="#71717A" stroke-width="1.4" stroke-linecap="round" />
+            <!-- Directed graph edges -->
+            <line x1="6.5" y1="9.5" x2="18.8" y2="6.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.1" stroke-dasharray="2 2" />
+            <line x1="6.5" y1="9.5" x2="14.5" y2="16.5" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="1.1" />
+            <!-- Transparent-center sensor & solid target nodes -->
+            <circle cx="6.5" cy="9.5" r="2" stroke="#FFFFFF" stroke-width="1.5" />
+            <circle cx="14.5" cy="16.5" r="1.75" stroke="#A1A1AA" stroke-width="1.4" />
+            <circle cx="18.8" cy="6.5" r="2.5" fill="#FFFFFF" />
+          </svg>
+          <span class="header-brand-title">AeroGraph</span>
+        </div>
+
+        <div class="pill-group">
+          <div class="telemetry-pill" title="11 continuous CAAQMS stations online in Bengaluru">
+            <span>Active: <strong id="kpi-active-stations">11/11</strong></span>
+          </div>
+          <div class="telemetry-pill" title="Citywide spatial mean PM2.5">
+            <span>City Avg: <strong id="kpi-city-avg">-- µg/m³</strong></span>
+          </div>
+          <div class="telemetry-pill" title="Station with highest observed concentration">
+            <span>Hotspot: <strong id="kpi-hotspot">--</strong></span>
+          </div>
+          <div class="telemetry-pill" title="Peak concentration projected across +6 hour horizon">
+            <span>+6h Peak: <strong id="kpi-p6-peak">--</strong></span>
+          </div>
+          <div class="telemetry-pill" title="Real-time Open-Meteo wind velocity & direction">
+            <span>Wind: <strong id="kpi-wind">--</strong></span>
+          </div>
+        </div>
+
+        <div class="top-right-meta">
+          <div class="station-dropdown-capsule" id="station-capsule-container">
+            <svg class="station-capsule-pin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span class="station-capsule-label">Station</span>
+            <select id="station-dropdown" class="station-select-native" title="Switch active target monitoring station">
+              <!-- Populated dynamically -->
+            </select>
+            <svg class="station-capsule-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <span class="poll-time-capsule" id="poll-timestamp">--:-- IST</span>
+        </div>
+      </header>
+
+      <!-- Sub-Header & Controls Bar -->
+      <div class="dashboard-header">
+        <div class="header-row-1">
+          <div class="dash-title-block">
+            <h1 id="dash-view-title">Operations Map</h1>
+            <p id="dash-view-sub" class="dash-subtitle">Bengaluru Air Quality Monitoring & Wind Dispersion</p>
+          </div>
+
+          <div class="header-controls">
+            <!-- Tesla Minimalist Tactile Toggles -->
+            <div class="tactile-toggle active toggle-emerald" id="toggle-wind"
+              title="Toggle wind particle streamlines on map">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+              <span>Wind Flow</span>
+            </div>
+
+            <div class="tactile-toggle active toggle-emerald" id="toggle-plume"
+              title="Toggle atmospheric plume dispersion overlay">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+              <span>Thermal Plume</span>
+            </div>
+
+            <div class="tactile-toggle toggle-crimson" id="toggle-spike"
+              title="Simulate +80 µg/m³ industrial emission spike">
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+              <span>+80 Upwind Spike</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="header-row-2">
+          <!-- Main Navigation Bar Enclosed Inside a Floating Pill Container -->
+          <div class="nav-pill-wrapper" id="nav-pill-container">
+            <div class="nav-sliding-indicator" id="nav-pill-indicator"></div>
+
+            <button class="nav-tab-btn active" data-tab="map" data-idx="0">Operations Map</button>
+            <button class="nav-tab-btn" data-tab="studio" data-idx="1">Neural Studio</button>
+            <button class="nav-tab-btn" data-tab="forecast" data-idx="2">Forecast & Drivers</button>
+            <button class="nav-tab-btn" data-tab="validation" data-idx="3">Validation Audit</button>
+            <button class="nav-tab-btn" data-tab="matrix" data-idx="4">Station Matrix</button>
+          </div>
+
+          <div class="station-filters">
+            <button class="filter-pill active" data-filter="all" title="Show all 11 CAAQMS stations">All 11</button>
+            <button class="filter-pill" data-filter="good" title="Filter stations with PM2.5 < 35 µg/m³">Good
+              &lt;35</button>
+            <button class="filter-pill" data-filter="moderate"
+              title="Filter stations with PM2.5 between 35 and 60 µg/m³">Moderate 35-60</button>
+            <button class="filter-pill" data-filter="poor" title="Filter stations with PM2.5 > 60 µg/m³">Poor
+              &gt;60</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inset Rounded Container -->
+      <div class="tab-content-container">
+
+        <!-- TAB 1: OPERATIONS MAP -->
+        <section class="tab-pane active" id="pane-map">
+          <div id="map"></div>
+          <canvas id="wind-canvas"></canvas>
+
+          <!-- Floating Station Inspector Card (Haulix TX-4821-HX Style) -->
+          <div class="inspector-card" id="inspector-card">
+            <div class="inspector-header">
+              <div>
+                <div class="inspector-title">
+                  <span id="inspect-name">Silk Board</span>
+                  <span class="badge-status-pill" id="inspect-status-pill">Active</span>
+                </div>
+                <div class="inspector-subtitle" id="inspect-coords">12.9176° N, 77.6238° E</div>
+              </div>
+            </div>
+
+            <div class="inspector-progress-block">
+              <div class="prog-label-row">
+                <span>Coupled Upwind Inflow</span>
+                <span class="tabular-nums" id="inspect-upwind-pct">78.4%</span>
+              </div>
+              <div class="prog-bar-track">
+                <div class="prog-bar-fill" id="inspect-upwind-bar"></div>
+              </div>
+            </div>
+
+            <div class="gauges-container">
+              <div class="gauge-card">
+                <div class="gauge-label">Observed PM2.5</div>
+                <div class="radial-svg-box">
+                  <svg width="82" height="82" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#27272A" stroke-width="7" fill="none" />
+                    <circle id="pm-gauge-arc" cx="50" cy="50" r="40" stroke="#FFFFFF" stroke-width="7"
+                      stroke-dasharray="251.2" stroke-dashoffset="120" stroke-linecap="round" fill="none"
+                      transform="rotate(-90 50 50)"
+                      style="transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;" />
+                  </svg>
+                  <div class="radial-val-center">
+                    <span class="val tabular-nums" id="inspect-pm25-val">28.4</span>
+                    <span class="unit">µg/m³</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gauge-card">
+                <div class="gauge-label">Wind Velocity</div>
+                <div class="radial-svg-box">
+                  <svg width="82" height="82" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#27272A" stroke-width="7" fill="none" />
+                    <circle id="wind-gauge-arc" cx="50" cy="50" r="40" stroke="#FFFFFF" stroke-width="7"
+                      stroke-dasharray="251.2" stroke-dashoffset="160" stroke-linecap="round" fill="none"
+                      transform="rotate(-90 50 50)" />
+                  </svg>
+                  <div class="radial-val-center">
+                    <span class="val tabular-nums" id="inspect-wind-val">10.8</span>
+                    <span class="unit">km/h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="inspector-projection-row">
+              <span>+6h Projection</span>
+              <span id="inspect-alert-text"><strong>Stable (±2.4 µg/m³)</strong></span>
+            </div>
+          </div>
+
+          <!-- Floating Top-Right Compass Rose (Click to Align North) -->
+          <div class="floating-compass" title="Click to align True North" id="floating-compass-btn">
+            <div class="compass-bezel">
+              <div class="compass-dial" id="compass-dial-el">
+                <svg width="76" height="76" viewBox="0 0 100 100">
+                  <text x="50" y="16" fill="#EF4444" font-size="9" font-family="'JetBrains Mono', monospace"
+                    font-weight="800" text-anchor="middle">N</text>
+                  <text x="86" y="53" fill="#71717A" font-size="8.5" font-family="'JetBrains Mono', monospace"
+                    font-weight="700" text-anchor="middle">E</text>
+                  <text x="50" y="90" fill="#71717A" font-size="8.5" font-family="'JetBrains Mono', monospace"
+                    font-weight="700" text-anchor="middle">S</text>
+                  <text x="14" y="53" fill="#71717A" font-size="8.5" font-family="'JetBrains Mono', monospace"
+                    font-weight="700" text-anchor="middle">W</text>
+                  <polygon points="50,22 46,50 54,50" fill="#EF4444" />
+                  <polygon points="50,78 46,50 54,50" fill="#3F3F46" />
+                  <circle cx="50" cy="50" r="3.5" fill="#FFFFFF" />
+                </svg>
+              </div>
+              <div class="compass-center-info">
+                <span class="compass-speed tabular-nums" id="compass-speed-text">N</span>
+                <span class="compass-dir" id="compass-dir-text">0°</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Map Controls -->
+          <div class="map-controls-floating">
+            <button class="map-ctrl-btn" id="map-zoom-in" title="Zoom In">+</button>
+            <button class="map-ctrl-btn" id="map-zoom-out" title="Zoom Out">−</button>
+            <button class="map-ctrl-btn" id="map-reset-city" title="Reset to Bengaluru View"
+              style="font-size: 0.70rem; font-weight: 700;">BLR</button>
+            <button class="map-ctrl-btn" id="map-focus-target" title="Focus Selected Target Station">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+        </section>
+
+        <!-- TAB 2: NEURAL STUDIO -->
+        <section class="tab-pane" id="pane-studio">
+          <div class="studio-grid">
+            <!-- Card 1: Spatial Neighbors -->
+            <div class="rounded-card">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  <span>Spatial Neighbors</span>
+                </div>
+                <span class="badge-status-pill">Top 5 Stations</span>
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+                Upwind influence and spatial proximity to target station. Click any station to inspect.
+              </p>
+              <div class="neighbor-list" id="neighbor-list-el"></div>
+            </div>
+
+            <!-- Card 2: Spatial Features & Neuron Lattice -->
+            <div class="rounded-card" style="grid-column: 2 / 3; grid-row: 1 / 2;">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                    <rect x="9" y="9" width="6" height="6"></rect>
+                  </svg>
+                  <span>Spatial Features & Neuron Lattice</span>
+                </div>
+                <div style="font-size: 0.74rem; color: var(--text-secondary);" id="hovered-neuron-badge">
+                  Hover any cell to inspect connections
+                </div>
+              </div>
+
+              <div class="lattice-stage">
+                <!-- Synapse SVG Overlay: Positioned on stage with z-index: 25 so ALL synapses are 100% VISIBLE above the grid! -->
+                <svg id="synapse-overlay"></svg>
+
+                <!-- Left Bay: Input Features -->
+                <div class="gcn-inflow-bay">
+                  <div class="bay-header-label">
+                    <span>Input Features</span>
+                    <span style="color: var(--accent-emerald); font-family: var(--font-mono);">Spatial Inflow</span>
+                  </div>
+
+                  <div class="inflow-feature-list">
+                    <div class="inflow-feature-row">
+                      <span class="inflow-feature-name">PM2.5 Input</span>
+                      <span class="inflow-feature-val" id="inflow-pm25-val">-- µg/m³</span>
+                    </div>
+                    <div class="inflow-feature-row">
+                      <span class="inflow-feature-name">Wind Velocity</span>
+                      <span class="inflow-feature-val" id="inflow-wind-val">-- km/h</span>
+                    </div>
+                    <div class="inflow-feature-row">
+                      <span class="inflow-feature-name">Temp & Humidity</span>
+                      <span class="inflow-feature-val" id="inflow-thermo-val">26°C · 55%</span>
+                    </div>
+                    <div class="inflow-feature-row">
+                      <span class="inflow-feature-name">Time of Day</span>
+                      <span class="inflow-feature-val" id="inflow-diurnal-val">24h Periodicity</span>
+                    </div>
+                  </div>
+
+                  <div class="gcn-spectrum-bank">
+                    <div class="bay-header-label" style="margin-bottom: 5px;">
+                      <span>Spatial Channels</span>
+                      <span id="gcn-active-count" style="color: var(--text-muted); font-size: 0.65rem;">64/64 Active</span>
+                    </div>
+                    <div class="gcn-strip-col" id="gcn-strip-el"></div>
+                  </div>
+                </div>
+
+                <!-- Center Bay: 8x8 Lattice Grid & Micro-Inspector -->
+                <div class="lattice-center-bay">
+                  <div class="lattice-grid-container">
+                    <div class="lattice-grid" id="lattice-grid-el"></div>
+                  </div>
+
+                  <div class="neuron-micro-card" id="neuron-micro-card-el">
+                    <div class="neuron-card-unit">
+                      <span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block;" id="micro-card-dot"></span>
+                      <span id="micro-card-unit-id">Neuron #28</span>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.70rem;" id="micro-card-desc">Activation:</div>
+                    <div class="neuron-card-val" id="micro-card-val">+0.4182</div>
+                  </div>
+                </div>
+
+                <!-- Right Bay: Horizon Prediction Hub (+1h to +6h) -->
+                <div class="horizon-cards-bay">
+                  <div class="bay-header-label" style="padding: 0 4px; margin-bottom: 4px;">
+                    <span>Forecast Horizons</span>
+                    <span style="color: var(--text-muted); font-size: 0.65rem;">6 Horizons</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h1" data-h="0">
+                    <span class="node-pill-tag">+1h</span>
+                    <span class="node-pred-val" id="h-pred-0">--</span>
+                    <span class="node-delta-tag" id="h-delta-0">+0.0</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h2" data-h="1">
+                    <span class="node-pill-tag">+2h</span>
+                    <span class="node-pred-val" id="h-pred-1">--</span>
+                    <span class="node-delta-tag" id="h-delta-1">+0.0</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h3" data-h="2">
+                    <span class="node-pill-tag">+3h</span>
+                    <span class="node-pred-val" id="h-pred-2">--</span>
+                    <span class="node-delta-tag" id="h-delta-2">+0.0</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h4" data-h="3">
+                    <span class="node-pill-tag">+4h</span>
+                    <span class="node-pred-val" id="h-pred-3">--</span>
+                    <span class="node-delta-tag" id="h-delta-3">+0.0</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h5" data-h="4">
+                    <span class="node-pill-tag">+5h</span>
+                    <span class="node-pred-val" id="h-pred-4">--</span>
+                    <span class="node-delta-tag" id="h-delta-4">+0.0</span>
+                  </div>
+                  <div class="horizon-node-card" id="pill-h6" data-h="5">
+                    <span class="node-pill-tag">+6h</span>
+                    <span class="node-pred-val" id="h-pred-5">--</span>
+                    <span class="node-delta-tag" id="h-delta-5">+0.0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: 24h Hidden State Dynamics Line Trace (Row 2) -->
+            <div class="rounded-card" style="grid-column: 1 / 3;">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>24-Hour Hidden State Dynamics</span>
+                </div>
+                <span class="badge-status-pill">24h History</span>
+              </div>
+              <div class="chart-container-svg" id="dynamics-chart-box" style="height: 180px;">
+                <svg id="dynamics-chart-svg" width="100%" height="100%"></svg>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: FORECAST & DRIVERS -->
+        <section class="tab-pane" id="pane-forecast">
+          <div class="forecast-grid">
+            <!-- 24h Historical Trajectory & 6h Forecast Curve -->
+            <div class="rounded-card">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>24-Hour History & 6-Hour Forecast</span>
+                </div>
+                <span class="badge-status-pill" id="forecast-mode-badge">Baseline</span>
+              </div>
+              <div class="chart-container-svg" id="forecast-chart-box">
+                <svg id="forecast-chart-svg" width="100%" height="100%"></svg>
+              </div>
+            </div>
+
+            <!-- Key Forecast Drivers -->
+            <div class="rounded-card">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                  </svg>
+                  <span>Key Forecast Drivers</span>
+                </div>
+                <span class="badge-status-pill">Feature Importance</span>
+              </div>
+              <div class="saliency-list" id="saliency-list-el"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: VALIDATION AUDIT -->
+        <section class="tab-pane" id="pane-validation">
+          <div class="validation-grid">
+            <div class="rounded-card">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                  </svg>
+                  <span>Data Pipeline & Station Coverage</span>
+                </div>
+                <span class="badge-status-pill">Live Feed</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div class="audit-metric-box">
+                  <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Monitoring
+                    Stations</div>
+                  <div class="tabular-nums"
+                    style="font-size: 1.10rem; font-weight: 700; color: var(--text-white); margin-top: 2px;">11 Active
+                    CAAQMS</div>
+                  <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 2px;">Bengaluru Urban &
+                    Industrial</div>
+                </div>
+                <div class="audit-metric-box">
+                  <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Temporal Window
+                  </div>
+                  <div class="tabular-nums"
+                    style="font-size: 1.10rem; font-weight: 700; color: var(--text-white); margin-top: 2px;">24h
+                    Lookback → 6h Ahead</div>
+                  <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 2px;">Multi-Step Model
+                  </div>
+                </div>
+                <div class="audit-metric-box">
+                  <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Feature Channels
+                  </div>
+                  <div class="tabular-nums"
+                    style="font-size: 1.10rem; font-weight: 700; color: var(--text-white); margin-top: 2px;">9 Telemetry
+                    Channels</div>
+                  <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 2px;">PM2.5, T, RH, WS, Sin/Cos
+                    Wind & Time</div>
+                </div>
+                <div class="audit-metric-box">
+                  <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Active Connections
+                  </div>
+                  <div class="tabular-nums"
+                    style="font-size: 1.10rem; font-weight: 700; color: var(--text-white); margin-top: 2px;"
+                    id="audit-sparsity-val">33.9% Connected</div>
+                  <div style="font-size: 0.70rem; color: var(--text-muted); margin-top: 2px;">Dynamic Advection
+                    Coupling</div>
+                </div>
+              </div>
+
+              <div
+                style="border-top: 1px solid var(--border-subtle); padding-top: 12px; font-size: 0.74rem; color: var(--text-secondary); line-height: 1.6;">
+                <p>• <strong>Cadence:</strong> Continuous 15-minute polling with hourly IST resampling.</p>
+                <p>• <strong>Normalization:</strong> Station-specific Robust Z-Score standardization fitted on 90-day
+                  baseline.</p>
+                <p>• <strong>Spatial Graph:</strong> Dynamic wind advection matrix reconstructed on each model update.</p>
+              </div>
+            </div>
+
+            <div class="rounded-card">
+              <div class="card-head">
+                <div class="card-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  <span>Model Architecture Benchmarks</span>
+                </div>
+                <span class="badge-status-pill"
+                  style="background: rgba(255, 255, 255, 0.1); color: var(--text-white); border-color: rgba(255, 255, 255, 0.2);">
+                  Benchmark Gain
+                </span>
+              </div>
+
+              <div
+                style="border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; margin-bottom: 14px;">
+                <table class="audit-table">
+                  <thead>
+                    <tr>
+                      <th>Architecture</th>
+                      <th>MAE</th>
+                      <th>RMSE</th>
+                      <th>R²</th>
+                      <th>Advection</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ablation-table-body"></tbody>
+                </table>
+              </div>
+
+              <div style="font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">
+                Observed vs. Predicted Correlation
+              </div>
+              <div class="chart-container-svg" id="scatter-chart-box" style="height: 170px;">
+                <svg id="scatter-chart-svg" width="100%" height="100%"></svg>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: STATION MATRIX -->
+        <section class="tab-pane" id="pane-matrix">
+          <div class="matrix-card">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>Station</th>
+                  <th>Coordinates</th>
+                  <th>Observed PM2.5</th>
+                  <th>1h Δ</th>
+                  <th>+1h Proj</th>
+                  <th>+3h Proj</th>
+                  <th>+6h Proj</th>
+                  <th>Wind Vector</th>
+                  <th>Category</th>
+                  <th>24h Sparkline</th>
+                </tr>
+              </thead>
+              <tbody id="matrix-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Application Core Logic -->
+  <script>
+
+(function() {
+  // Global State
+  const state = {
+    targetStationIdx: 0,
+    horizonIdx: 0,
+    filter: 'all',
+    activeTab: 'map',
+    toggles: {
+      wind: true,
+      plume: true,
+      spike: false
+    },
+    data: null,
+    map: null,
+    mapLoaded: false,
+    stationMarkers: [],
+    particles: [],
+    stationWinds: [],
+    animFrameId: null,
+    hoveredNeuron: null,
+    pinnedNeuron: null
+  };
+
+  // Geographic Bengaluru Bounds
+    const CARTO_API_KEY = "cb1_5dzp_1_d977400df891f7509d837f65";
+  const BOUNDS = {
+    minLng: 77.46, maxLng: 77.74,
+    minLat: 12.86, maxLat: 13.08
+  };
+  const NUM_PARTICLES = 360;
+
+  // DOM Elements
+  const els = {
+    logoBtn: document.getElementById('logo-btn'),
+    compassBtn: document.getElementById('floating-compass-btn'),
+    tabs: document.querySelectorAll('.nav-tab-btn, .rail-btn[data-tab]'),
+    panes: {
+      map: document.getElementById('pane-map'),
+      studio: document.getElementById('pane-studio'),
+      forecast: document.getElementById('pane-forecast'),
+      validation: document.getElementById('pane-validation'),
+      matrix: document.getElementById('pane-matrix')
+    },
+    filterPills: document.querySelectorAll('.filter-pill'),
+    stationDropdown: document.getElementById('station-dropdown'),
+    dashTitle: document.getElementById('dash-view-title'),
+    dashSub: document.getElementById('dash-view-sub'),
+    btnPoll: document.getElementById('btn-force-poll'),
+    pollIcon: document.getElementById('poll-icon'),
+    pollTime: document.getElementById('poll-timestamp'),
+    
+    // Indicators
+    navPillWrapper: document.getElementById('nav-pill-container'),
+    navPillIndicator: document.getElementById('nav-pill-indicator'),
+    railNavContainer: document.getElementById('rail-nav-container'),
+    railPillIndicator: document.getElementById('rail-pill-indicator'),
+
+    // Toggles
+    toggleWind: document.getElementById('toggle-wind'),
+    togglePlume: document.getElementById('toggle-plume'),
+    toggleSpike: document.getElementById('toggle-spike'),
+
+    // Top KPIs
+    kpiActive: document.getElementById('kpi-active-stations'),
+    kpiCityAvg: document.getElementById('kpi-city-avg'),
+    kpiHotspot: document.getElementById('kpi-hotspot'),
+    kpiP6Peak: document.getElementById('kpi-p6-peak'),
+    kpiWind: document.getElementById('kpi-wind'),
+
+    // Map Inspector Card
+    inspectName: document.getElementById('inspect-name'),
+    inspectCoords: document.getElementById('inspect-coords'),
+    inspectStatusPill: document.getElementById('inspect-status-pill'),
+    inspectUpwindPct: document.getElementById('inspect-upwind-pct'),
+    inspectUpwindBar: document.getElementById('inspect-upwind-bar'),
+    inspectPm25Val: document.getElementById('inspect-pm25-val'),
+    pmGaugeArc: document.getElementById('pm-gauge-arc'),
+    inspectWindVal: document.getElementById('inspect-wind-val'),
+    windGaugeArc: document.getElementById('wind-gauge-arc'),
+    inspectAlertText: document.getElementById('inspect-alert-text'),
+
+    // Compass
+    compassDial: document.getElementById('compass-dial-el'),
+    compassSpeed: document.getElementById('compass-speed-text'),
+    compassDir: document.getElementById('compass-dir-text'),
+
+    // Neural Studio
+    neighborList: document.getElementById('neighbor-list-el'),
+    gcnStrip: document.getElementById('gcn-strip-el'),
+    latticeGrid: document.getElementById('lattice-grid-el'),
+    synapseOverlay: document.getElementById('synapse-overlay'),
+    hoveredNeuronBadge: document.getElementById('hovered-neuron-badge'),
+    pillsH: [
+      document.getElementById('pill-h1'),
+      document.getElementById('pill-h2'),
+      document.getElementById('pill-h3'),
+      document.getElementById('pill-h4'),
+      document.getElementById('pill-h5'),
+      document.getElementById('pill-h6')
+    ],
+    dynamicsChartSvg: document.getElementById('dynamics-chart-svg'),
+
+    // Forecast & Saliency
+    forecastChartSvg: document.getElementById('forecast-chart-svg'),
+    saliencyList: document.getElementById('saliency-list-el'),
+    forecastModeBadge: document.getElementById('forecast-mode-badge'),
+
+    // Validation
+    auditSparsityVal: document.getElementById('audit-sparsity-val'),
+    ablationTableBody: document.getElementById('ablation-table-body'),
+    scatterChartSvg: document.getElementById('scatter-chart-svg'),
+
+    // Matrix
+    matrixTableBody: document.getElementById('matrix-table-body')
+  };
+
+  const tabTitles = {
+    map: { title: "Operations Map", sub: "Bengaluru Air Quality Monitoring & Wind Dispersion" },
+    studio: { title: "Neural Studio", sub: "Spatial Message Passing & Latent Feature Representation" },
+    forecast: { title: "Forecast & Drivers", sub: "6-Hour Forecast Trajectory & Key Factors" },
+    validation: { title: "Validation Audit", sub: "Sensor Data Quality & Prediction Accuracy Benchmarks" },
+    matrix: { title: "Station Matrix", sub: "Live Telemetry and 24-Hour Trends Across All 11 Stations" }
+  };
+
+  function showToast(msg, duration = 2000) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast-pill';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+
+  // -----------------------------------------------------------------------
+  // Animated Sliding Indicators
+  // -----------------------------------------------------------------------
+  function updateSlidingIndicators(activeTabKey) {
+    // 1. Top Nav Pill Indicator Animation
+    const activeNavBtn = document.querySelector(`.nav-tab-btn[data-tab="${activeTabKey}"]`);
+    if (activeNavBtn && els.navPillWrapper && els.navPillIndicator) {
+      const wrapperRect = els.navPillWrapper.getBoundingClientRect();
+      const btnRect = activeNavBtn.getBoundingClientRect();
+      const leftOffset = btnRect.left - wrapperRect.left;
+      const width = btnRect.width;
+
+      els.navPillIndicator.style.transform = `translateX(${leftOffset}px)`;
+      els.navPillIndicator.style.width = `${width}px`;
+    }
+
+    // 2. Left Rail Round Indicator Animation
+    const activeRailBtn = document.querySelector(`.rail-btn[data-tab="${activeTabKey}"]`);
+    if (activeRailBtn && els.railNavContainer && els.railPillIndicator) {
+      const navRect = els.railNavContainer.getBoundingClientRect();
+      const btnRect = activeRailBtn.getBoundingClientRect();
+      const topOffset = btnRect.top - navRect.top;
+
+      els.railPillIndicator.style.transform = `translateY(${topOffset}px)`;
+    }
+  }
+
+  function switchTab(tabKey) {
+    if (!els.panes[tabKey]) return;
+    state.activeTab = tabKey;
+
+    document.querySelectorAll('.rail-item-wrapper').forEach(w => {
+      const isAct = w.getAttribute('data-tab') === tabKey;
+      w.classList.toggle('active', isAct);
+      const btn = w.querySelector('.rail-btn');
+      if (btn) btn.classList.toggle('active', isAct);
+    });
+
+    document.querySelectorAll('.nav-tab-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-tab') === tabKey);
+    });
+
+    updateSlidingIndicators(tabKey);
+
+    Object.keys(els.panes).forEach(k => {
+      els.panes[k].classList.toggle('active', k === tabKey);
+    });
+
+    const meta = tabTitles[tabKey] || tabTitles.map;
+    els.dashTitle.textContent = meta.title;
+    els.dashSub.textContent = meta.sub;
+
+    if (tabKey === 'map' && state.map) {
+      setTimeout(() => {
+        state.map.resize();
+        resizeWindCanvas();
+      }, 50);
+    } else if (tabKey === 'studio') {
+      renderNeuralStudio();
+    } else if (tabKey === 'forecast') {
+      renderForecastCharts();
+    } else if (tabKey === 'validation') {
+      renderValidationAudit();
+    }
+  }
+
+  els.tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      if (tab) switchTab(tab);
+    });
+  });
+
+  function setupHoverReveals() {
+    const interactiveButtons = document.querySelectorAll('.rail-btn[data-desc], .nav-tab-btn');
+
+    interactiveButtons.forEach(btn => {
+      btn.addEventListener('mouseenter', () => {
+        const desc = btn.getAttribute('data-desc') || (tabTitles[btn.getAttribute('data-tab')] ? tabTitles[btn.getAttribute('data-tab')].sub : '');
+        if (desc && els.dashSub) {
+          els.dashSub.textContent = desc;
+        }
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        if (els.dashSub) {
+          const activeMeta = tabTitles[state.activeTab] || tabTitles.map;
+          els.dashSub.textContent = activeMeta.sub;
+        }
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      updateSlidingIndicators(state.activeTab);
+      resizeWindCanvas();
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Tactile Toggles (Fully Functional)
+  // -----------------------------------------------------------------------
+  function setupToggles() {
+    els.toggleWind.addEventListener('click', () => {
+      state.toggles.wind = !state.toggles.wind;
+      els.toggleWind.classList.toggle('active', state.toggles.wind);
+      if (!state.toggles.wind && windCtx && windCanvas) {
+        windCtx.clearRect(0, 0, windCanvas.width, windCanvas.height);
+      }
+    });
+
+    els.togglePlume.addEventListener('click', () => {
+      state.toggles.plume = !state.toggles.plume;
+      els.togglePlume.classList.toggle('active', state.toggles.plume);
+    });
+
+    els.toggleSpike.addEventListener('click', () => {
+      state.toggles.spike = !state.toggles.spike;
+      els.toggleSpike.classList.toggle('active', state.toggles.spike);
+      els.forecastModeBadge.textContent = state.toggles.spike ? "+80 Upwind Spike Counterfactual" : "Baseline OpenAQ";
+      els.forecastModeBadge.style.color = state.toggles.spike ? "var(--accent-crimson)" : "var(--text-white)";
+      renderAllViews();
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Station Filters (Fully Functional)
+  // -----------------------------------------------------------------------
+  els.filterPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      els.filterPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      state.filter = pill.getAttribute('data-filter');
+      renderStationMatrix();
+      updateMapMarkers();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Target Station Selection (Dropdown & Markers)
+  // -----------------------------------------------------------------------
+  els.stationDropdown.addEventListener('change', (e) => {
+    const idx = parseInt(e.target.value, 10);
+    selectStation(idx);
+  });
+
+  function selectStation(idx, fly = true) {
+    state.targetStationIdx = idx;
+    els.stationDropdown.value = idx;
+    
+    if (state.data && state.data.stations[idx] && state.map && fly) {
+      const st = state.data.stations[idx];
+      state.map.flyTo({
+        center: [st.lng, st.lat],
+        zoom: Math.max(state.map.getZoom(), 13.5),
+        pitch: 52,
+        duration: 900
+      });
+    }
+
+    // Refresh telemetry calculations for new target station
+    fetchTelemetry(false);
+  }
+
+  // -----------------------------------------------------------------------
+  // MapLibre GL 3D Map Setup (Carto Dark Raster Tiles)
+  // -----------------------------------------------------------------------
+  const BENGALURU_CENTER = [77.5946, 12.9716];
+
+    function initMap() {
+    const cartoDarkTiles = [
+      `https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+      `https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+      `https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`,
+      `https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`
+    ];
+
+    const mapStyle = {
+      version: 8,
+      sources: {
+        'carto-dark': {
+          type: 'raster',
+          tiles: cartoDarkTiles,
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }
+      },
+      layers: [
+        {
+          id: 'carto-dark-layer',
+          type: 'raster',
+          source: 'carto-dark',
+          minzoom: 0,
+          maxzoom: 20,
+          layout: { visibility: 'visible' }
+        }
+      ]
+    };
+
+    state.map = new maplibregl.Map({
+      container: 'map',
+      style: mapStyle,
+      center: BENGALURU_CENTER,
+      zoom: 11.2,
+      pitch: 35,
+      bearing: -12,
+      maxPitch: 85,
+      antialias: true,
+      scrollZoom: false,
+      transformRequest: (url, resourceType) => {
+        if (resourceType === 'Tile' && url.includes('cartocdn.com') && !url.includes('key=')) {
+          const sep = url.includes('?') ? '&' : '?';
+          return { url: `${url}${sep}key=${CARTO_API_KEY}` };
+        }
+        return { url };
+      }
+    });
+
+    state.map.on('error', (err) => {
+      console.warn('[MapLibre Warning]', err);
+    });
+
+    const mapEl = document.getElementById('map');
+    if (mapEl) {
+      mapEl.addEventListener('wheel', (e) => {
+        if (e.metaKey || e.ctrlKey) {
+          state.map.scrollZoom.enable();
+        } else {
+          state.map.scrollZoom.disable();
+        }
+      });
+    }
+
+    const zoomIn = document.getElementById('map-zoom-in');
+    if (zoomIn) zoomIn.addEventListener('click', () => state.map.zoomIn());
+    const zoomOut = document.getElementById('map-zoom-out');
+    if (zoomOut) zoomOut.addEventListener('click', () => state.map.zoomOut());
+    const resetCity = document.getElementById('map-reset-city');
+    if (resetCity) resetCity.addEventListener('click', () => {
+      state.map.flyTo({ center: BENGALURU_CENTER, zoom: 11.2, pitch: 35, bearing: -12, duration: 1200 });
+    });
+    const focusTarget = document.getElementById('map-focus-target');
+    if (focusTarget) focusTarget.addEventListener('click', () => {
+      if (!state.data) return;
+      const st = state.data.stations[state.targetStationIdx];
+      if (st) {
+        state.map.flyTo({ center: [st.lng, st.lat], zoom: 14.0, pitch: 50, bearing: -15, duration: 1000 });
+      }
+    });
+
+    // Synchronize Floating Compass with Map Orientation & True North
+    state.map.on('rotate', updateCompass);
+    state.map.on('pitch', updateCompass);
+    state.map.on('move', updateCompass);
+
+    if (els.compassBtn) {
+      els.compassBtn.addEventListener('click', () => {
+        if (!state.map) return;
+        state.map.easeTo({ bearing: 0, pitch: 35, duration: 650 });
+        showToast('🧭 Map Aligned to True North', 1500);
+      });
+    }
+
+    state.map.on('load', () => {
+      state.mapLoaded = true;
+      initWindCanvas();
+      setupMapDataLayers();
+      if (state.data) {
+        updateMapMarkers();
+      }
+      state.map.resize();
+      setTimeout(() => {
+        state.map.resize();
+        resizeWindCanvas();
+      }, 150);
+    });
+
+    state.map.on('movestart', resetWindParticles);
+    state.map.on('move', resetWindParticles);
+    state.map.on('zoom', resetWindParticles);
+    state.map.on('pitch', resetWindParticles);
+    state.map.on('rotate', resetWindParticles);
+
+    // Initial resize to ensure map fits container immediately
+    setTimeout(() => {
+      if (state.map) state.map.resize();
+    }, 200);
+  }
+
+  function setupMapDataLayers() {
+    if (!state.map) return;
+    if (state.map.getSource('stations-src')) return;
+
+    state.map.addSource('stations-src', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] }
+    });
+
+    state.map.addLayer({
+      id: 'stations-halo',
+      type: 'circle',
+      source: 'stations-src',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 10, 15, 24],
+        'circle-color': ['get', 'color'],
+        'circle-opacity': 0.25,
+        'circle-stroke-width': 1.5,
+        'circle-stroke-color': ['get', 'color'],
+        'circle-stroke-opacity': 0.7
+      }
+    });
+
+    state.map.addLayer({
+      id: 'stations-core',
+      type: 'circle',
+      source: 'stations-src',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 5, 15, 9],
+        'circle-color': ['get', 'color'],
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': '#09090B'
+      }
+    });
+
+    state.map.on('click', 'stations-core', (e) => {
+      if (e.features && e.features[0]) {
+        const idx = e.features[0].properties.idx;
+        selectStation(idx, true);
+      }
+    });
+
+    state.map.on('mouseenter', 'stations-core', () => {
+      state.map.getCanvas().style.cursor = 'pointer';
+    });
+    state.map.on('mouseleave', 'stations-core', () => {
+      state.map.getCanvas().style.cursor = '';
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Physical Eulerian Multi-Station IDW Fluid Wind & Curl-Noise Streamlines
+  // -----------------------------------------------------------------------
+  let windCanvas, windCtx;
+  let canvasWidth = 0, canvasHeight = 0;
+
+  function initWindCanvas() {
+    windCanvas = document.getElementById('wind-canvas');
+    if (!windCanvas) return;
+    windCtx = windCanvas.getContext('2d');
+    resizeWindCanvas();
+    window.addEventListener('resize', resizeWindCanvas);
+    spawnWindParticles();
+    animateWind();
+  }
+
+  function resizeWindCanvas() {
+    if (!windCanvas || !state.map) return;
+    const rect = document.getElementById('pane-map').getBoundingClientRect();
+    canvasWidth = rect.width;
+    canvasHeight = rect.height;
+    windCanvas.width = canvasWidth;
+    windCanvas.height = canvasHeight;
+    resetWindParticles();
+  }
+
+  function createParticle(randomAge) {
+    const lng = BOUNDS.minLng + Math.random() * (BOUNDS.maxLng - BOUNDS.minLng);
+    const lat = BOUNDS.minLat + Math.random() * (BOUNDS.maxLat - BOUNDS.minLat);
+    const maxAge = Math.floor(45 + Math.random() * 55);
+    return {
+      lng: lng, lat: lat, prevLng: lng, prevLat: lat,
+      age: randomAge ? Math.floor(Math.random() * maxAge) : 0,
+      maxAge: maxAge,
+      speedFactor: 0.90 + Math.random() * 0.30,
+      phase: Math.random() * 6.28
+    };
+  }
+
+  function spawnWindParticles() {
+    state.particles = [];
+    for (let i = 0; i < NUM_PARTICLES; i++) {
+      state.particles.push(createParticle(true));
+    }
+  }
+
+  function resetWindParticles() {
+    if (windCtx && windCanvas) {
+      windCtx.clearRect(0, 0, windCanvas.width, windCanvas.height);
+    }
+  }
+
+  // Multi-Station IDW + Divergence-Free Harmonic Streamfunction
+  function getLocalFluidWind(lng, lat, phase) {
+    if (!state.stationWinds || state.stationWinds.length === 0) {
+      return { u: 0.0003, v: 0.00005, pm: 25.0 };
+    }
+
+    let sumWeight = 0, uBase = 0, vBase = 0, localPM = 0;
+    for (let i = 0; i < state.stationWinds.length; i++) {
+      const sw = state.stationWinds[i];
+      const dlng = lng - sw.lon, dlat = lat - sw.lat;
+      const d2 = dlng * dlng + dlat * dlat;
+      const w = 1.0 / Math.max(d2, 0.00004);
+      sumWeight += w;
+      uBase += sw.u * w;
+      vBase += sw.v * w;
+      localPM += sw.pm25 * w;
+    }
+    uBase /= sumWeight;
+    vBase /= sumWeight;
+    localPM /= sumWeight;
+
+    // Divergence-free harmonic streamfunction psi(x,y)
+    const dx = (lng - 77.5946) * 35.0 + phase * 0.07;
+    const dy = (lat - 12.9716) * 35.0 + phase * 0.07;
+
+    const dpsi_dy = -Math.sin(dx) * Math.sin(dy) 
+                  + 0.55 * Math.sin(1.9 * dx + 0.8) * Math.cos(1.9 * dy)
+                  - 0.25 * Math.cos(3.2 * dx) * Math.sin(3.2 * dy);
+
+    const minus_dpsi_dx = -(Math.cos(dx) * Math.cos(dy) 
+                          + 0.55 * Math.cos(1.9 * dx + 0.8) * Math.sin(1.9 * dy)
+                          - 0.25 * Math.sin(3.2 * dx) * Math.cos(3.2 * dy));
+
+    const speedMag = Math.sqrt(uBase * uBase + vBase * vBase);
+    const curlScale = 0.36 * speedMag;
+
+    return {
+      u: uBase + dpsi_dy * curlScale,
+      v: vBase + minus_dpsi_dx * curlScale,
+      pm: localPM
+    };
+  }
+
+  // Particulate Plume Color Gradient: Emerald (<35) -> Amber (35-60) -> Crimson (>60)
+  function getPlumeColor(pm, alpha) {
+    if (!state.toggles.plume) {
+      return `rgba(228, 228, 231, ${alpha.toFixed(2)})`;
+    }
+    if (pm < 35) {
+      // Good: Emerald to Cyan
+      const t = Math.max(0, Math.min(1, pm / 35));
+      const r = Math.round(16 + t * 24);
+      const g = Math.round(185 + t * 20);
+      const b = Math.round(129 + t * 50);
+      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+    } else if (pm < 60) {
+      // Moderate: Warm Amber / Gold
+      const t = (pm - 35) / 25;
+      const r = Math.round(245 + t * 6);
+      const g = Math.round(158 - t * 14);
+      const b = Math.round(11 + t * 18);
+      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+    } else {
+      // Poor / Hotspot: Vivid Crimson / Coral
+      const t = Math.min(1, (pm - 60) / 40);
+      const r = Math.round(244 + t * 11);
+      const g = Math.round(63 - t * 25);
+      const b = Math.round(94 - t * 35);
+      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+    }
+  }
+
+  function animateWind() {
+    if (state.activeTab === 'map' && state.map && windCtx && state.data) {
+      if (canvasWidth < 50 || canvasHeight < 50 || windCanvas.width === 0) {
+        resizeWindCanvas();
+      }
+
+      const moving = state.map.isMoving();
+      if (moving) {
+        windCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      } else {
+        // destination-in fades existing strokes to transparency WITHOUT painting opaque black!
+        windCtx.save();
+        windCtx.globalCompositeOperation = 'destination-in';
+        windCtx.fillStyle = 'rgba(0, 0, 0, 0.90)';
+        windCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+        windCtx.restore();
+      }
+
+      if (state.toggles.wind && !moving) {
+        windCtx.lineWidth = 1.5;
+        windCtx.lineCap = 'round';
+
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          let p = state.particles[i];
+          if (!p) {
+            state.particles[i] = createParticle(true);
+            p = state.particles[i];
+          }
+          p.age++;
+
+          if (p.age >= p.maxAge || p.lng < BOUNDS.minLng || p.lng > BOUNDS.maxLng || p.lat < BOUNDS.minLat || p.lat > BOUNDS.maxLat) {
+            state.particles[i] = createParticle(false);
+            continue;
+          }
+
+          const wind = getLocalFluidWind(p.lng, p.lat, p.phase);
+          p.prevLng = p.lng;
+          p.prevLat = p.lat;
+          p.lng += wind.u * p.speedFactor;
+          p.lat += wind.v * p.speedFactor;
+
+          const p0 = state.map.project([p.prevLng, p.prevLat]);
+          const p1 = state.map.project([p.lng, p.lat]);
+
+          if (p1.x >= 0 && p1.x <= canvasWidth && p1.y >= 0 && p1.y <= canvasHeight) {
+            const lifeFrac = p.age / p.maxAge;
+            const alpha = Math.sin(lifeFrac * Math.PI) * 0.75;
+            
+            // Multi-colored PM2.5 plume streamlines (Emerald -> Amber -> Crimson)
+            windCtx.strokeStyle = getPlumeColor(wind.pm, alpha);
+            windCtx.beginPath();
+            windCtx.moveTo(p0.x, p0.y);
+            windCtx.lineTo(p1.x, p1.y);
+            windCtx.stroke();
+          }
+        }
+      }
+    }
+    state.animFrameId = requestAnimationFrame(animateWind);
+  }
+
+  // -----------------------------------------------------------------------
+  // Data Fetching & Sync Pipeline
+  // -----------------------------------------------------------------------
+  async function fetchTelemetry(force = false) {
+    try {
+      if (force) {
+        els.pollIcon.style.animation = 'spin 1s linear infinite';
+      }
+      const endpoint = force ? '/api/poll' : '/api/telemetry';
+      const method = force ? 'POST' : 'GET';
+      const url = `${endpoint}?target_station_idx=${state.targetStationIdx}&horizon_idx=${state.horizonIdx}`;
+      
+      const res = await fetch(url, { method });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const json = await res.json();
+      state.data = force ? json.data : json;
+
+      // Prepare physical station wind vectors for IDW fluid simulation
+      if (state.data && state.data.stations) {
+        state.stationWinds = state.data.stations.map(s => {
+          // Meteorological wind (from) -> Physical flow vector (to): +180 deg
+          const flowRad = ((s.wind_dir_deg + 180.0) % 360.0) * (Math.PI / 180.0);
+          const spd = Math.max(s.wind_speed_kmh, 1.5) * 0.000045;
+          return {
+            lon: s.lng,
+            lat: s.lat,
+            pm25: s.current_pm25,
+            u: Math.sin(flowRad) * spd,
+            v: Math.cos(flowRad) * spd
+          };
+        });
+      }
+
+      renderAllViews();
+
+      if (force) {
+        setTimeout(() => { els.pollIcon.style.animation = ''; }, 600);
+      }
+    } catch (err) {
+      console.error("[TELEMETRY FETCH ERROR]", err);
+      els.pollIcon.style.animation = '';
+    }
+  }
+
+  els.btnPoll.addEventListener('click', () => fetchTelemetry(true));
+
+  if (els.logoBtn) {
+    els.logoBtn.addEventListener('click', async () => {
+      els.logoBtn.classList.add('pulsing');
+      showToast('⚡ Instant Inference Pulse · Updating 11 stations...', 1800);
+      try {
+        await fetchTelemetry(true);
+        showToast('⚡ AeroGraph Synced · 11 Stations Live', 2000);
+      } catch (err) {
+        showToast('⚡ Live Sync Dispatched', 1500);
+      } finally {
+        setTimeout(() => els.logoBtn.classList.remove('pulsing'), 650);
+      }
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Renderers for All Views
+  // -----------------------------------------------------------------------
+  function renderAllViews() {
+    if (!state.data) return;
+    renderTopPills();
+    renderStationDropdown();
+    renderInspectorCard();
+    renderCompass();
+    updateMapMarkers();
+    renderStationMatrix();
+
+    if (state.activeTab === 'studio') renderNeuralStudio();
+    if (state.activeTab === 'forecast') renderForecastCharts();
+    if (state.activeTab === 'validation') renderValidationAudit();
+
+    setTimeout(() => updateSlidingIndicators(state.activeTab), 50);
+  }
+
+  function renderTopPills() {
+    const k = state.data.kpis;
+    els.kpiActive.textContent = k.active_stations;
+    els.kpiCityAvg.textContent = `${k.city_avg_pm25} µg/m³`;
+    els.kpiHotspot.textContent = `${k.hotspot.station} (${k.hotspot.pm25})`;
+    els.kpiP6Peak.textContent = `${k.p6_peak.station} (${k.p6_peak.pm25})`;
+    els.kpiWind.textContent = `${k.wind.speed_kmh} km/h @ ${k.wind.direction_deg}° ${k.wind.compass}`;
+    els.pollTime.textContent = state.data.timestamp_ist || "LIVE";
+    if (els.auditSparsityVal) {
+      els.auditSparsityVal.textContent = `${k.sparsity_pct}% Active Synapses`;
+    }
+  }
+
+  function renderStationDropdown() {
+    const currentVal = state.targetStationIdx;
+    els.stationDropdown.innerHTML = '';
+    state.data.stations.forEach((st) => {
+      const opt = document.createElement('option');
+      opt.value = st.idx;
+      opt.textContent = `${st.name} (${st.current_pm25} µg/m³) - ${st.category}`;
+      if (st.idx === currentVal) opt.selected = true;
+      els.stationDropdown.appendChild(opt);
+    });
+  }
+
+  function renderInspectorCard() {
+    const st = state.data.stations[state.targetStationIdx];
+    if (!st) return;
+
+    els.inspectName.textContent = st.name;
+    els.inspectCoords.textContent = `${st.lat.toFixed(4)}° N, ${st.lng.toFixed(4)}° E`;
+
+    const pmVal = state.toggles.spike ? (st.current_pm25 + 80.0) : st.current_pm25;
+    els.inspectPm25Val.textContent = pmVal.toFixed(1);
+    
+    const maxPM = 160.0;
+    const pmRatio = Math.min(1.0, Math.max(0.0, pmVal / maxPM));
+    const offset = 251.2 * (1.0 - pmRatio);
+    els.pmGaugeArc.style.strokeDashoffset = offset;
+    
+    let color = '#FFFFFF';
+    if (pmVal >= 100) color = '#F43F5E';
+    else if (pmVal >= 60) color = '#FB923C';
+    else if (pmVal >= 35) color = '#E4E4E7';
+    els.pmGaugeArc.style.stroke = color;
+
+    els.inspectWindVal.textContent = st.wind_speed_kmh.toFixed(1);
+    const windRatio = Math.min(1.0, st.wind_speed_kmh / 30.0);
+    els.windGaugeArc.style.strokeDashoffset = 251.2 * (1.0 - windRatio);
+
+    const topN = state.data.top_neighbors[0];
+    const upwindPct = topN ? (topN.weight * 100.0).toFixed(1) : "65.4";
+    els.inspectUpwindPct.textContent = `${upwindPct}% (${topN ? topN.name : 'Coupled'})`;
+    els.inspectUpwindBar.style.width = `${Math.min(100, Math.max(10, parseFloat(upwindPct)))}%`;
+
+    const p6 = state.toggles.spike ? state.data.forecast.spike[5] : state.data.forecast.baseline[5];
+    const delta = p6 - pmVal;
+    const sign = delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1);
+    els.inspectAlertText.innerHTML = `<strong>${sign} µg/m³</strong> (${p6.toFixed(1)} peak)`;
+  }
+
+  function updateCompass() {
+    if (!state.map || !els.compassDial) return;
+    const bearing = state.map.getBearing();
+    els.compassDial.style.transform = `rotate(${-bearing}deg)`;
+    const normBearing = ((Math.round(bearing) % 360) + 360) % 360;
+    const cardinals = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const heading = cardinals[Math.round(normBearing / 45) % 8];
+    if (els.compassSpeed) els.compassSpeed.textContent = heading;
+    if (els.compassDir) els.compassDir.textContent = `${normBearing}°`;
+  }
+
+  function renderCompass() {
+    updateCompass();
+  }
+
+  function updateMapMarkers() {
+    if (!state.map || !state.data) return;
+
+    // 1. Update native WebGL GeoJSON layers
+    if (state.map.getSource('stations-src')) {
+      const features = state.data.stations
+        .filter(st => {
+          if (state.filter === 'good') return st.current_pm25 < 35;
+          if (state.filter === 'moderate') return st.current_pm25 >= 35 && st.current_pm25 < 60;
+          if (state.filter === 'poor') return st.current_pm25 >= 60;
+          return true;
+        })
+        .map(st => {
+          let col = '#E4E4E7';
+          if (st.current_pm25 >= 100) col = '#F43F5E';
+          else if (st.current_pm25 >= 60) col = '#FB923C';
+          else if (st.current_pm25 < 35) col = '#10B981';
+          if (st.idx === state.targetStationIdx) col = '#FFFFFF';
+
+          return {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [st.lng, st.lat]
+            },
+            properties: {
+              idx: st.idx,
+              name: st.name,
+              pm25: st.current_pm25,
+              color: col,
+              is_target: st.idx === state.targetStationIdx
+            }
+          };
+        });
+
+      state.map.getSource('stations-src').setData({
+        type: 'FeatureCollection',
+        features: features
+      });
+    }
+
+    // 2. Add or update HTML MapLibre markers
+    if (state.stationMarkers.length > 0) {
+      state.stationMarkers.forEach(m => m.remove());
+      state.stationMarkers = [];
+    }
+
+    state.data.stations.forEach(st => {
+      if (state.filter === 'good' && st.current_pm25 >= 35) return;
+      if (state.filter === 'moderate' && (st.current_pm25 < 35 || st.current_pm25 >= 60)) return;
+      if (state.filter === 'poor' && st.current_pm25 < 60) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'station-beacon' + (st.idx === state.targetStationIdx ? ' selected' : '');
+
+      let col = '#10B981';
+      if (st.current_pm25 >= 100) col = '#F43F5E';
+      else if (st.current_pm25 >= 60) col = '#FB923C';
+      else if (st.current_pm25 >= 35) col = '#E4E4E7';
+
+      const pulse = document.createElement('div');
+      pulse.className = 'pulse-ring';
+      pulse.style.borderColor = col;
+
+      const core = document.createElement('div');
+      core.className = 'beacon-core';
+      core.style.backgroundColor = col;
+
+      const badge = document.createElement('div');
+      badge.className = 'beacon-badge';
+      badge.innerHTML = `<span>${st.name}</span><span style="opacity:0.35;">|</span><span style="color:${col};">${Math.round(st.current_pm25)}</span>`;
+
+      wrap.appendChild(pulse);
+      wrap.appendChild(core);
+      wrap.appendChild(badge);
+
+      wrap.onclick = (e) => {
+        e.stopPropagation();
+        selectStation(st.idx, true);
+      };
+
+      const marker = new maplibregl.Marker({ element: wrap, anchor: 'center' })
+        .setLngLat([st.lng, st.lat])
+        .addTo(state.map);
+
+      state.stationMarkers.push(marker);
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // TAB 2: WindSTGNN Neural Studio
+  // -----------------------------------------------------------------------
+  function renderNeuralStudio() {
+    if (!state.data) return;
+
+    // 1. Spatial Message Passing
+    els.neighborList.innerHTML = '';
+    state.data.top_neighbors.forEach((n, i) => {
+      const item = document.createElement('div');
+      item.className = 'neighbor-item';
+      item.title = `Click to switch target station to ${n.name}`;
+      const pct = (n.weight * 100).toFixed(1);
+      item.innerHTML = `
+        <div class="neighbor-item-head">
+          <span>#${i+1} ${n.name}</span>
+          <span style="color: var(--text-white); font-weight: 700;">${n.weight.toFixed(3)}</span>
+        </div>
+        <div class="neighbor-meta">
+          <span>Distance: ${n.distance_km} km</span>
+          <span>Inflow Coupling: ${pct}%</span>
+        </div>
+        <div class="prog-bar-track">
+          <div class="prog-bar-fill" style="width: ${Math.min(100, Math.max(8, pct))}%;"></div>
+        </div>
+      `;
+      item.addEventListener('click', () => {
+        selectStation(n.idx, true);
+      });
+      els.neighborList.appendChild(item);
+    });
+
+    // 2. GCN Bar Strip (64 micro-bars)
+    els.gcnStrip.innerHTML = '';
+    for (let i = 0; i < 64; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'gcn-bar';
+      bar.id = `gcn-bar-${i}`;
+      if (state.hoveredNeuron === i || state.pinnedNeuron === i) {
+        bar.classList.add('active');
+      }
+      els.gcnStrip.appendChild(bar);
+    }
+
+    // 3. 8x8 Lattice Grid
+    els.latticeGrid.innerHTML = '';
+    const hidden64 = state.data.neural.gru_hidden_64 || [];
+    for (let u = 0; u < 64; u++) {
+      const cell = document.createElement('div');
+      cell.className = 'lattice-cell';
+      cell.textContent = u;
+      cell.id = `cell-u-${u}`;
+      if (state.hoveredNeuron === u) cell.classList.add('hovered');
+      if (state.pinnedNeuron === u) cell.classList.add('pinned');
+
+      cell.addEventListener('mouseenter', () => {
+        state.hoveredNeuron = u;
+        updateSynapseWires(u);
+        highlightGcnBar(u);
+        els.hoveredNeuronBadge.textContent = `Unit #${u} | Latent Activation: ${(hidden64[u] || 0).toFixed(3)}`;
+      });
+
+      cell.addEventListener('mouseleave', () => {
+        if (state.pinnedNeuron === null) {
+          state.hoveredNeuron = null;
+          updateSynapseWires(null);
+          highlightGcnBar(null);
+          els.hoveredNeuronBadge.textContent = "Hover any cell u ∈ [0..63] to inspect synapses";
+        }
+      });
+
+      cell.addEventListener('click', () => {
+        if (state.pinnedNeuron === u) {
+          state.pinnedNeuron = null;
+          cell.classList.remove('pinned');
+        } else {
+          document.querySelectorAll('.lattice-cell').forEach(c => c.classList.remove('pinned'));
+          state.pinnedNeuron = u;
+          cell.classList.add('pinned');
+        }
+      });
+
+      els.latticeGrid.appendChild(cell);
+    }
+
+    els.pillsH.forEach((pill, hIdx) => {
+      pill.addEventListener('mouseenter', () => {
+        highlightNeuronsForHorizon(hIdx);
+      });
+      pill.addEventListener('mouseleave', () => {
+        if (!state.pinnedNeuron) {
+          document.querySelectorAll('.lattice-cell').forEach(c => c.classList.remove('hovered'));
+        }
+      });
+    });
+
+    updateSynapseWires(state.pinnedNeuron || state.hoveredNeuron);
+    renderDynamicsChart();
+  }
+
+  function highlightNeuronsForHorizon(hIdx) {
+    if (!state.data) return;
+    const W_out = state.data.neural.decoder_weights;
+    if (!W_out || !W_out[hIdx]) return;
+    const weights = W_out[hIdx];
+    const sorted = weights.map((w, u) => ({ u, w, abs: Math.abs(w) })).sort((a, b) => b.abs - a.abs);
+    const topUnits = new Set(sorted.slice(0, 8).map(x => x.u));
+
+    document.querySelectorAll('.lattice-cell').forEach((cell, u) => {
+      cell.classList.toggle('hovered', topUnits.has(u));
+    });
+  }
+
+  function highlightGcnBar(u) {
+    document.querySelectorAll('.gcn-bar').forEach((b, idx) => {
+      b.classList.toggle('active', idx === u);
+    });
+  }
+
+    // Luminous Synaptic Arborization: Distinct graceful branches fan out directly from any cell
+  function updateSynapseWires(hoveredUnit) {
+    const svg = els.synapseOverlay;
+    if (!svg || !state.data) return;
+
+    const stageEl = document.querySelector('.lattice-stage');
+    if (!stageEl) return;
+    const stageRect = stageEl.getBoundingClientRect();
+    if (stageRect.width === 0 || stageRect.height === 0) return;
+
+    const gridEl = els.latticeGrid;
+    if (!gridEl) return;
+    const gridRect = gridEl.getBoundingClientRect();
+
+    svg.setAttribute('width', stageRect.width);
+    svg.setAttribute('height', stageRect.height);
+    svg.setAttribute('viewBox', `0 0 ${stageRect.width} ${stageRect.height}`);
+    svg.innerHTML = '';
+
+    els.pillsH.forEach(p => {
+      if (p) p.classList.remove('coupled-pos', 'coupled-neg');
+    });
+
+    const W_out = state.data.neural ? state.data.neural.decoder_weights : null;
+
+    // 1. Ambient Synaptic Web (when not hovering or subtle background)
+    if (W_out && W_out.length >= 6) {
+      let bgSvg = '';
+      const step = hoveredUnit !== null ? 6 : 3;
+      for (let u = 0; u < 64; u += step) {
+        const cell = document.getElementById(`cell-u-${u}`);
+        let cellX, cellY;
+        if (cell) {
+          const cRect = cell.getBoundingClientRect();
+          cellX = (cRect.left - stageRect.left) + cRect.width / 2;
+          cellY = (cRect.top - stageRect.top) + cRect.height / 2;
+        } else {
+          const row = Math.floor(u / 8);
+          const col = u % 8;
+          cellX = (gridRect.left - stageRect.left) + col * 34 + 15;
+          cellY = (gridRect.top - stageRect.top) + row * 34 + 15;
+        }
+
+        for (let h = 0; h < 6; h++) {
+          const card = els.pillsH[h];
+          if (!card) continue;
+          const cardRect = card.getBoundingClientRect();
+          const targetX = cardRect.left - stageRect.left;
+          const targetY = (cardRect.top - stageRect.top) + cardRect.height / 2;
+
+          const dx = targetX - cellX;
+          const dy = targetY - cellY;
+          const cp1x = cellX + Math.max(25, dx * 0.38);
+          const cp1y = cellY + (dy * 0.18);
+          const cp2x = targetX - Math.max(35, dx * 0.36);
+          const cp2y = targetY;
+
+          bgSvg += `<path d="M ${cellX.toFixed(1)} ${cellY.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${targetX.toFixed(1)} ${targetY.toFixed(1)}" stroke="rgba(255, 255, 255, 0.05)" stroke-width="0.75" fill="none"/>`;
+        }
+      }
+      svg.innerHTML = bgSvg;
+    }
+
+    // 2. Active Synaptic Tree: 6 distinct branches radiating directly from the hovered neuron
+    if (hoveredUnit !== null && W_out && W_out.length >= 6) {
+      const u = hoveredUnit;
+      const cell = document.getElementById(`cell-u-${u}`);
+      let cellX, cellY;
+      if (cell) {
+        const cRect = cell.getBoundingClientRect();
+        cellX = (cRect.left - stageRect.left) + cRect.width / 2;
+        cellY = (cRect.top - stageRect.top) + cRect.height / 2;
+      } else {
+        const row = Math.floor(u / 8);
+        const col = u % 8;
+        cellX = (gridRect.left - stageRect.left) + col * 34 + 15;
+        cellY = (gridRect.top - stageRect.top) + row * 34 + 15;
+      }
+
+      for (let h = 0; h < 6; h++) {
+        const w = (W_out[h] && W_out[h][u] !== undefined) ? W_out[h][u] : 0.0;
+        const isPos = w >= 0;
+        const strokeColor = isPos ? '#10B981' : '#F43F5E';
+        const strokeWidth = Math.min(3.4, Math.max(1.8, Math.abs(w) * 4.2));
+
+        const card = els.pillsH[h];
+        if (!card) continue;
+        const cardRect = card.getBoundingClientRect();
+        const targetX = cardRect.left - stageRect.left;
+        const targetY = (cardRect.top - stageRect.top) + cardRect.height / 2;
+
+        const dx = targetX - cellX;
+        const dy = targetY - cellY;
+
+        // Individualized dendritic divergence: each branch immediately departs with its own trajectory!
+        const cp1x = cellX + Math.max(28, dx * 0.38);
+        const cp1y = cellY + (dy * 0.28);
+        const cp2x = targetX - Math.max(40, dx * 0.38);
+        const cp2y = targetY;
+
+        const pathData = `M ${cellX.toFixed(1)} ${cellY.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${targetX.toFixed(1)} ${targetY.toFixed(1)}`;
+
+        // Ambient outer glow aura
+        const glowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        glowPath.setAttribute('d', pathData);
+        glowPath.setAttribute('stroke', isPos ? 'rgba(16, 185, 129, 0.38)' : 'rgba(244, 63, 94, 0.38)');
+        glowPath.setAttribute('stroke-width', strokeWidth + 3.2);
+        glowPath.setAttribute('fill', 'none');
+        glowPath.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(glowPath);
+
+        // Sharp core synaptic axon
+        const mainPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        mainPath.setAttribute('d', pathData);
+        mainPath.setAttribute('stroke', strokeColor);
+        mainPath.setAttribute('stroke-width', strokeWidth);
+        mainPath.setAttribute('fill', 'none');
+        mainPath.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(mainPath);
+
+        // Animated electrical signal impulse packet flowing along this specific branch
+        const pulseCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        pulseCircle.setAttribute('r', '2.6');
+        pulseCircle.setAttribute('fill', '#FFFFFF');
+        pulseCircle.setAttribute('filter', 'drop-shadow(0 0 5px #FFFFFF)');
+
+        const animMotion = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+        animMotion.setAttribute('path', pathData);
+        animMotion.setAttribute('dur', `${1.05 + h * 0.14}s`);
+        animMotion.setAttribute('repeatCount', 'indefinite');
+        pulseCircle.appendChild(animMotion);
+        svg.appendChild(pulseCircle);
+
+        // Coupled card highlight
+        card.classList.add(isPos ? 'coupled-pos' : 'coupled-neg');
+      }
+    }
+  }
+
+  function renderDynamicsChart() {
+    const svg = els.dynamicsChartSvg;
+    if (!svg || !state.data) return;
+    const trace = state.data.neural.hidden_trace_24h || [];
+    if (!trace.length) return;
+
+    const w = svg.clientWidth || 800;
+    const h = svg.clientHeight || 180;
+    const padL = 40, padR = 20, padT = 20, padB = 30;
+
+    const minV = Math.min(...trace) - 0.05;
+    const maxV = Math.max(...trace) + 0.05;
+
+    let pts = [];
+    trace.forEach((v, i) => {
+      const x = padL + (i / (trace.length - 1)) * (w - padL - padR);
+      const y = h - padB - ((v - minV) / (maxV - minV)) * (h - padT - padB);
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    });
+
+    let html = `
+      <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <line x1="${padL}" y1="${padT}" x2="${w-padR}" y2="${padT}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" stroke-width="1"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="#FFFFFF" stroke-width="2.0" stroke-linecap="round"/>
+    `;
+
+    pts.forEach(p => {
+      const [x, y] = p.split(',');
+      html += `<circle cx="${x}" cy="${y}" r="3" fill="#FFFFFF" stroke="#09090B" stroke-width="1.5"/>`;
+    });
+
+    svg.innerHTML = html;
+  }
+
+  // -----------------------------------------------------------------------
+  // TAB 3: Forecast & Saliency
+  // -----------------------------------------------------------------------
+  function renderForecastCharts() {
+    if (!state.data) return;
+
+    const svg = els.forecastChartSvg;
+    const hist = state.data.forecast.history_24h || [];
+    const fore = state.toggles.spike ? state.data.forecast.spike : state.data.forecast.baseline;
+
+    const w = svg.clientWidth || 600;
+    const h = svg.clientHeight || 300;
+    const padL = 45, padR = 20, padT = 30, padB = 40;
+
+    const allVals = [...hist, ...fore];
+    const minV = Math.max(0, Math.min(...allVals) - 10);
+    const maxV = Math.max(...allVals) + 20;
+
+    const totalSteps = hist.length + fore.length;
+
+    let histPts = [];
+    hist.forEach((v, i) => {
+      const x = padL + (i / (totalSteps - 1)) * (w - padL - padR);
+      const y = h - padB - ((v - minV) / (maxV - minV)) * (h - padT - padB);
+      histPts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    });
+
+    let forePts = [];
+    const lastHistX = padL + ((hist.length - 1) / (totalSteps - 1)) * (w - padL - padR);
+    const lastHistY = h - padB - ((hist[hist.length - 1] - minV) / (maxV - minV)) * (h - padT - padB);
+    forePts.push(`${lastHistX.toFixed(1)},${lastHistY.toFixed(1)}`);
+
+    fore.forEach((v, i) => {
+      const x = padL + ((hist.length + i) / (totalSteps - 1)) * (w - padL - padR);
+      const y = h - padB - ((v - minV) / (maxV - minV)) * (h - padT - padB);
+      forePts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    });
+
+    const foreColor = state.toggles.spike ? '#F43F5E' : '#FFFFFF';
+
+    let html = `
+      <line x1="${padL}" y1="${h-padB}" x2="${w-padR}" y2="${h-padB}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <line x1="${lastHistX}" y1="${padT}" x2="${lastHistX}" y2="${h-padB}" stroke="rgba(255,255,255,0.2)" stroke-dasharray="4,4" stroke-width="1"/>
+      <text x="${lastHistX}" y="${padT - 8}" fill="#A1A1AA" font-size="9.5" font-family="'JetBrains Mono', monospace" text-anchor="middle">NOW</text>
+      
+      <!-- Historical Trajectory (Clean Silver) -->
+      <polyline points="${histPts.join(' ')}" fill="none" stroke="#A1A1AA" stroke-width="2.0" stroke-linecap="round"/>
+      
+      <!-- Forecast Trajectory (Pure White / Crimson Spike) -->
+      <polyline points="${forePts.join(' ')}" fill="none" stroke="${foreColor}" stroke-width="2.4" stroke-linecap="round"/>
+    `;
+
+    forePts.forEach((p) => {
+      const [x, y] = p.split(',');
+      html += `<circle cx="${x}" cy="${y}" r="3.5" fill="${foreColor}" stroke="#09090B" stroke-width="1.5"/>`;
+    });
+
+    svg.innerHTML = html;
+
+    els.saliencyList.innerHTML = '';
+    const saliency = state.data.neural.saliency || [];
+    saliency.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'saliency-row';
+      row.innerHTML = `
+        <span class="saliency-feat-name">${item.feature}</span>
+        <div class="saliency-bar-track">
+          <div class="saliency-bar-fill" style="width: ${Math.min(100, Math.max(4, item.importance * 3.5))}%;"></div>
+        </div>
+        <span class="saliency-val tabular-nums">${item.importance.toFixed(1)}%</span>
+      `;
+      els.saliencyList.appendChild(row);
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // TAB 4: Validation Audit
+  // -----------------------------------------------------------------------
+  function renderValidationAudit() {
+    if (!state.data) return;
+
+    els.ablationTableBody.innerHTML = '';
+    const benchmarks = state.data.validation.benchmarks || [];
+    benchmarks.forEach(b => {
+      const tr = document.createElement('tr');
+      if (b.is_highlight) tr.className = 'highlight-row';
+      tr.innerHTML = `
+        <td>${b.architecture}</td>
+        <td>${b.mae.toFixed(2)}</td>
+        <td>${b.rmse.toFixed(2)}</td>
+        <td>${b.r2.toFixed(3)}</td>
+        <td><span class="badge-status-pill">${b.advection}</span></td>
+      `;
+      els.ablationTableBody.appendChild(tr);
+    });
+
+    const svg = els.scatterChartSvg;
+    const pts = state.data.validation.scatter_points || [];
+    const w = svg.clientWidth || 450;
+    const h = svg.clientHeight || 170;
+    const pad = 25;
+
+    let html = `
+      <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${pad}" stroke="rgba(255,255,255,0.15)" stroke-dasharray="3,3" stroke-width="1.2"/>
+    `;
+
+    pts.forEach(p => {
+      const x = pad + (p.observed / 180.0) * (w - 2 * pad);
+      const y = h - pad - (p.predicted / 180.0) * (h - 2 * pad);
+      html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.8" fill="#FFFFFF" opacity="0.8"/>`;
+    });
+
+    svg.innerHTML = html;
+  }
+
+  // -----------------------------------------------------------------------
+  // TAB 5: Station Matrix
+  // -----------------------------------------------------------------------
+  function renderStationMatrix() {
+    if (!state.data) return;
+    els.matrixTableBody.innerHTML = '';
+
+    state.data.stations.forEach(st => {
+      if (state.filter === 'good' && st.current_pm25 >= 35) return;
+      if (state.filter === 'moderate' && (st.current_pm25 < 35 || st.current_pm25 >= 60)) return;
+      if (state.filter === 'poor' && st.current_pm25 < 60) return;
+
+      const tr = document.createElement('tr');
+      if (st.idx === state.targetStationIdx) tr.className = 'selected-row';
+      tr.title = `Click to select ${st.name} as target station`;
+
+      const d1Color = st.delta_1h > 0 ? 'var(--accent-crimson)' : (st.delta_1h < 0 ? 'var(--accent-emerald)' : 'var(--text-secondary)');
+      const d1Sign = st.delta_1h > 0 ? `+${st.delta_1h.toFixed(1)}` : st.delta_1h.toFixed(1);
+
+      const spark = st.sparkline_24h || [];
+      let sparkSvg = '';
+      if (spark.length > 1) {
+        const minS = Math.min(...spark);
+        const maxS = Math.max(...spark) + 1.0;
+        const pts = spark.map((v, i) => {
+          const x = (i / (spark.length - 1)) * 60;
+          const y = 18 - ((v - minS) / (maxS - minS)) * 14;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        sparkSvg = `<svg width="60" height="20"><polyline points="${pts}" fill="none" stroke="#FFFFFF" stroke-width="1.2"/></svg>`;
+      }
+
+      const catClass = st.category.toLowerCase();
+
+      tr.innerHTML = `
+        <td style="font-weight: 600; color: var(--text-white); font-family: var(--font-sans);">${st.name}</td>
+        <td style="color: var(--text-muted); font-size: 0.72rem;">${st.lat.toFixed(4)}, ${st.lng.toFixed(4)}</td>
+        <td><strong>${st.current_pm25.toFixed(1)}</strong> <span style="font-size:0.68rem; color:var(--text-muted);">µg/m³</span></td>
+        <td style="color: ${d1Color}; font-weight: 600;">${d1Sign}</td>
+        <td style="color: var(--text-secondary);">${st.forecast_p1.toFixed(1)}</td>
+        <td style="color: var(--text-secondary);">${st.forecast_p3.toFixed(1)}</td>
+        <td style="color: var(--text-secondary);">${st.forecast_p6.toFixed(1)}</td>
+        <td style="color: var(--text-muted);">${st.wind_speed_kmh.toFixed(1)} km/h @ ${st.wind_dir_deg.toFixed(0)}°</td>
+        <td><span class="status-dot-pill ${catClass}">${st.category}</span></td>
+        <td>${sparkSvg}</td>
+      `;
+
+      tr.addEventListener('click', () => {
+        selectStation(st.idx, true);
+        switchTab('map');
+      });
+
+      els.matrixTableBody.appendChild(tr);
+    });
+  }
+
+  // -----------------------------------------------------------------------
+  // Initialization
+  // -----------------------------------------------------------------------
+  setupHoverReveals();
+  setupToggles();
+  initMap();
+  fetchTelemetry(false);
+
+  setTimeout(() => {
+    updateSlidingIndicators('map');
+  }, 100);
+
+  setInterval(() => {
+    fetchTelemetry(false);
+  }, 60000);
+
+})();
+
+</script>
+</html>
