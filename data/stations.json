@@ -1,0 +1,149 @@
+[
+  {
+    "id": 6206921,
+    "name": "Koramangala",
+    "short_name": "Koramangala",
+    "latitude": 12.9370223,
+    "longitude": 77.6115928,
+    "datetime_last": "2026-11-22T15:00:00Z",
+    "pm25_sensor_id": 15203555,
+    "pm10_sensor_id": null,
+    "no2_sensor_id": null,
+    "all_pm25_sensor_ids": [
+      15203555
+    ]
+  },
+  {
+    "id": 6975,
+    "name": "Silk Board, Bengaluru - KSPCB",
+    "short_name": "Silk Board",
+    "latitude": 12.917348,
+    "longitude": 77.622813,
+    "datetime_last": "2026-11-22T14:30:00Z",
+    "pm25_sensor_id": 12235285,
+    "pm10_sensor_id": 12235284,
+    "no2_sensor_id": 12235282,
+    "all_pm25_sensor_ids": [
+      20156,
+      12235285
+    ]
+  },
+  {
+    "id": 5548,
+    "name": "BTM Layout, Bengaluru - CPCB",
+    "short_name": "BTM Layout",
+    "latitude": 12.9135218,
+    "longitude": 77.5950804,
+    "datetime_last": "2026-11-22T14:15:00Z",
+    "pm25_sensor_id": 12235361,
+    "pm10_sensor_id": 12235360,
+    "no2_sensor_id": 12235358,
+    "all_pm25_sensor_ids": [
+      14635,
+      12235361
+    ]
+  },
+  {
+    "id": 6973,
+    "name": "Jayanagar 5th Block, Bengaluru - KSPCB",
+    "short_name": "Jayanagar 5th Block",
+    "latitude": 12.920984,
+    "longitude": 77.584908,
+    "datetime_last": "2026-11-22T14:15:00Z",
+    "pm25_sensor_id": 12235267,
+    "pm10_sensor_id": 12235266,
+    "no2_sensor_id": 12235264,
+    "all_pm25_sensor_ids": [
+      20162,
+      12235267
+    ]
+  },
+  {
+    "id": 6974,
+    "name": "Bapuji Nagar, Bengaluru - KSPCB",
+    "short_name": "Bapuji Nagar",
+    "latitude": 12.951913,
+    "longitude": 77.539784,
+    "datetime_last": "2026-11-22T14:15:00Z",
+    "pm25_sensor_id": 12235240,
+    "pm10_sensor_id": 12235239,
+    "no2_sensor_id": 12235237,
+    "all_pm25_sensor_ids": [
+      20165,
+      12235240
+    ]
+  },
+  {
+    "id": 6983,
+    "name": "Hombegowda Nagar, Bengaluru - KSPCB",
+    "short_name": "Hombegowda Nagar",
+    "latitude": 12.938539,
+    "longitude": 77.5901,
+    "datetime_last": "2026-11-22T14:15:00Z",
+    "pm25_sensor_id": 12235258,
+    "pm10_sensor_id": 12235257,
+    "no2_sensor_id": 12235255,
+    "all_pm25_sensor_ids": [
+      12235258,
+      20199
+    ]
+  },
+  {
+    "id": 6984,
+    "name": "Hebbal, Bengaluru - KSPCB",
+    "short_name": "Hebbal",
+    "latitude": 13.029152,
+    "longitude": 77.585901,
+    "datetime_last": "2026-11-22T14:15:00Z",
+    "pm25_sensor_id": 12235249,
+    "pm10_sensor_id": 12235248,
+    "no2_sensor_id": 12235246,
+    "all_pm25_sensor_ids": [
+      20212,
+      12235249
+    ]
+  },
+  {
+    "id": 3409385,
+    "name": "RVCE-Mailasandra, Bengaluru - KSPCB",
+    "short_name": "Kengeri / RVCE",
+    "latitude": 12.921418,
+    "longitude": 77.502466,
+    "datetime_last": "2026-11-22T14:00:00Z",
+    "pm25_sensor_id": 12237573,
+    "pm10_sensor_id": 12237572,
+    "no2_sensor_id": 12237570,
+    "all_pm25_sensor_ids": [
+      12237573
+    ]
+  },
+  {
+    "id": 5607,
+    "name": "Peenya, Bengaluru - CPCB",
+    "short_name": "Peenya",
+    "latitude": 13.0270199,
+    "longitude": 77.494094,
+    "datetime_last": "2026-11-21T08:30:00Z",
+    "pm25_sensor_id": 12235370,
+    "pm10_sensor_id": 12235369,
+    "no2_sensor_id": 12235367,
+    "all_pm25_sensor_ids": [
+      12235370,
+      14859
+    ]
+  },
+  {
+    "id": 3409388,
+    "name": "Kasturi Nagar, Bengaluru - KSPCB",
+    "short_name": "Kasturi Nagar",
+    "latitude": 13.003872,
+    "longitude": 77.664217,
+    "datetime_last": "2026-11-20T21:00:00Z",
+    "pm25_sensor_id": 12237600,
+    "pm10_sensor_id": 12237599,
+    "no2_sensor_id": 12237597,
+    "all_pm25_sensor_ids": [
+      12237600
+    ]
+  }
+]
